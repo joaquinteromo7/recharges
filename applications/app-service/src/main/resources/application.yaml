@@ -1,0 +1,23 @@
+##Spring Configuration
+server:
+  port: 8089
+spring:
+
+  application:
+    name: recharge_ms
+  devtools:
+    add-properties: false
+  h2:
+    console:
+      enabled: 'true'
+  datasource:
+    username: sa
+    url: jdbc:h2:mem:testdb
+    driverClassName: org.h2.Driver
+    password: ''
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create
+  H2: 'DB Configuration :'
+

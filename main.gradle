@@ -1,0 +1,93 @@
+allprojects {
+    repositories {
+        mavenCentral()
+        maven { url "https://repo.spring.io/snapshot" }
+        maven { url "https://repo.spring.io/milestone" }
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'jacoco'
+    apply plugin: 'io.spring.dependency-management'
+
+    compileJava.dependsOn validateStructure
+    sourceCompatibility = JavaVersion.VERSION_11
+
+    dependencies {
+        implementation 'io.projectreactor:reactor-core'
+        implementation 'io.projectreactor.addons:reactor-extra'
+
+        testImplementation 'io.projectreactor:reactor-test'
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        compileOnly "org.projectlombok:lombok:${lombokVersion}"
+        annotationProcessor  "org.projectlombok:lombok:${lombokVersion}"
+        testCompileOnly  "org.projectlombok:lombok:${lombokVersion}"
+        testAnnotationProcessor  "org.projectlombok:lombok:${lombokVersion}"
+        implementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+        testCompileOnly 'junit:junit:4.12'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.3.1'
+    }
+
+    test.finalizedBy(project.tasks.jacocoTestReport)
+
+    jacocoTestReport {
+        dependsOn test
+        reports {
+            xml.enabled true
+            xml.destination file("${buildDir}/reports/jacoco.xml")
+            csv.enabled false
+            html.destination file("${buildDir}/reports/jacocoHtml")
+        }
+
+        afterEvaluate {
+            classDirectories.setFrom(files(classDirectories.files.collect {
+                fileTree(dir: it, exclude: [
+                        'co/com/bancolombia/model/**',
+                        'co/com/bancolombia/api/**',
+                        'co/com/bancolombia/config/**',
+                        'co/com/bancolombia/MainApplication**'
+                ])
+            }))
+        }
+    }
+
+}
+
+jacoco {
+    toolVersion = "${jacocoVersion}"
+    reportsDir = file("$buildDir/reports")
+}
+
+task jacocoMergedReport(type: JacocoReport) {
+    dependsOn = subprojects.jacocoTestReport
+    additionalSourceDirs.setFrom files(subprojects.sourceSets.main.allSource.srcDirs)
+    sourceDirectories.setFrom files(subprojects.sourceSets.main.allSource.srcDirs)
+    classDirectories.setFrom files(subprojects.sourceSets.main.output)
+    executionData.setFrom project.fileTree(dir: '.', include: '**/build/jacoco/test.exec')
+    reports {
+        xml.enabled true
+        csv.enabled false
+        html.enabled true
+    }
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    'co/com/bancolombia/model/**',
+                    'co/com/bancolombia/api/**',
+                    'co/com/bancolombia/config/**',
+                    'co/com/bancolombia/MainApplication**'
+
+            ])
+        }))
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs = [
+            '-Amapstruct.suppressGeneratorTimestamp=true'
+    ]
+}
+tasks.named('wrapper') {
+  gradleVersion = '6.9.1'
+ }
